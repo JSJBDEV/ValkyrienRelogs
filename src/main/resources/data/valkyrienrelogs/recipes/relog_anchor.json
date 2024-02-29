@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "relog_anchor",
+  "ingredients": [
+
+    {"item": "minecraft:amethyst_shard"},
+    {"item": "minecraft:amethyst_shard"},
+    {"item": "minecraft:polished_blackstone_pressure_plate"}
+
+  ],
+  "result": {
+    "item": "valkyrienrelogs:relog_anchor"
+  }
+}
