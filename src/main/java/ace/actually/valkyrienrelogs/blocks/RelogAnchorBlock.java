@@ -1,5 +1,6 @@
 package ace.actually.valkyrienrelogs.blocks;
 
+import ace.actually.valkyrienrelogs.PlayerShipAnchorAccessor;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
@@ -41,11 +42,15 @@ public class RelogAnchorBlock extends BlockWithEntity {
                 ChunkPos chunkPos = world.getChunk(pos).getPos();
                 LoadedServerShip ship =serverShipWorld.getLoadedShips().getByChunkPos(chunkPos.x,chunkPos.z, provider.getDimensionId());
                 RelogAnchorBlockEntity anchorBlockEntity = (RelogAnchorBlockEntity) world.getBlockEntity(pos);
+
+                PlayerShipAnchorAccessor anchorAccessor = (PlayerShipAnchorAccessor) player;
+
                 if(anchorBlockEntity.getOfficers().isEmpty())
                 {
                     anchorBlockEntity.addOfficer(player);
-                    removeOtherShip(player);
-                    player.addScoreboardTag("VaReShip_"+ship.getId());
+
+                    anchorAccessor.setCurrentShipId(ship.getId());
+
                     player.sendMessage(Text.of("you can now log off on this ship (and are an officer)!"),false);
                 }
                 else if(containsOfficer(anchorBlockEntity.getOfficers(),player))
@@ -53,13 +58,9 @@ public class RelogAnchorBlock extends BlockWithEntity {
                     List<PlayerEntity> nearby = world.getEntitiesByClass(PlayerEntity.class,new Box(pos.add(-1,-1,-1),pos.add(1,1,1)),PlayerEntity::isPlayer);
                     for(PlayerEntity n: nearby)
                     {
-                        if(!n.getScoreboardTags().contains("VaReShip_"+ship.getId()))
-                        {
-                            removeOtherShip(player);
-                            n.addScoreboardTag("VaReShip_"+ship.getId());
-                            n.sendMessage(Text.of("you can now log off on this ship!"),false);
-
-                        }
+                        PlayerShipAnchorAccessor nAccess = (PlayerShipAnchorAccessor) n;
+                        nAccess.setCurrentShipId(ship.getId());
+                        n.sendMessage(Text.of("you can now log off on this ship!"),false);
                         if(player.isSneaking())
                         {
                             anchorBlockEntity.addOfficer(n);
@@ -84,22 +85,7 @@ public class RelogAnchorBlock extends BlockWithEntity {
         return false;
     }
 
-    private void removeOtherShip(PlayerEntity player)
-    {
-        String marked = "--";
-        for(String tag: player.getScoreboardTags())
-        {
-            if(tag.startsWith("VaReShip"))
-            {
-                marked=tag;
-            }
-        }
-        if(!marked.equals("--"))
-        {
-            player.sendMessage(Text.of("You have unregistered from you old ship!"),false);
-            player.removeScoreboardTag(marked);
-        }
-    }
+
 
     @Nullable
     @Override

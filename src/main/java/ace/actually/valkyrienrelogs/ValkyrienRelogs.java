@@ -12,9 +12,11 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.RaycastContext;
+import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,29 +45,18 @@ public class ValkyrienRelogs implements ModInitializer {
         Registry.register(Registry.BLOCK,new Identifier("valkyrienrelogs","relog_anchor"),RELOG_ANCHOR_BLOCK);
         ServerPlayConnectionEvents.JOIN.register((serverPlayNetworkHandler, packetSender, minecraftServer)->
         {
-            if(serverPlayNetworkHandler.player.getScoreboardTags().contains("VaRe_lo_ship"))
+            ServerShipWorld serverShipWorld = (ServerShipWorld) ValkyrienSkiesMod.getVsCore().getHooks().getCurrentShipServerWorld();
+
+            PlayerShipAnchorAccessor anchorAccessor = (PlayerShipAnchorAccessor) serverPlayNetworkHandler.player;
+            if(anchorAccessor.currentShipId()!=-1 && anchorAccessor.loggedOffOnShip())
             {
-                ServerShipWorld serverShipWorld = (ServerShipWorld) ValkyrienSkiesMod.getVsCore().getHooks().getCurrentShipServerWorld();
+                LoadedServerShip ship = serverShipWorld.getLoadedShips().getById(anchorAccessor.currentShipId());
 
-                long id = -1;
-                for(String tag: serverPlayNetworkHandler.player.getScoreboardTags())
-                {
-                    if(tag.startsWith("VaReShip"))
-                    {
-                        id = Long.parseLong(tag.split("_")[1]);
-                    }
-                }
-                if(id!=-1)
-                {
-                    LoadedServerShip ship = serverShipWorld.getLoadedShips().getById(id);
-                    Vector3dc a = ship.getTransform().getPositionInWorld();
-
-                    serverPlayNetworkHandler.player.setPosition(a.x(),a.y()+5,a.z());
-                    serverPlayNetworkHandler.player.removeScoreboardTag("VaRe_lo_ship");
-                }
-
-
+                Vector3d go = VSGameUtilsKt.toWorldCoordinates(ship,anchorAccessor.relativeShipPosition());
+                serverPlayNetworkHandler.player.setPosition(go.x,go.y+1,go.z);
+                anchorAccessor.setLoggedOffOnShip(false);
             }
+
         });
         ServerPlayConnectionEvents.DISCONNECT.register((serverPlayNetworkHandler,minecraftServer)->
         {
@@ -79,7 +70,10 @@ public class ValkyrienRelogs implements ModInitializer {
 
             if(serverShipWorld.isBlockInShipyard(result.getBlockPos().getX(),result.getBlockPos().getY(),result.getBlockPos().getZ(),provider.getDimensionId()))
             {
-                serverPlayNetworkHandler.player.addScoreboardTag("VaRe_lo_ship");
+                //check it's the right ship
+                PlayerShipAnchorAccessor anchorAccessor = (PlayerShipAnchorAccessor) serverPlayNetworkHandler.player;
+                anchorAccessor.setRelativeShipPosition(result.getBlockPos());
+                anchorAccessor.setLoggedOffOnShip(true);
             }
 
         });

@@ -49,6 +49,18 @@ public abstract class PlayerMixin extends LivingEntity implements PlayerShipAnch
 		dataTracker.set(ANCHOR_DATA,tag);
 	}
 
+	@Override
+	public long currentShipId() {
+		return dataTracker.get(ANCHOR_DATA).getLong("shipId");
+	}
+
+	@Override
+	public void setCurrentShipId(long l) {
+		NbtCompound tag = dataTracker.get(ANCHOR_DATA);
+		tag.putLong("shipId",l);
+		dataTracker.set(ANCHOR_DATA,tag);
+	}
+
 	@Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
 	public void readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
 		dataTracker.set(ANCHOR_DATA,nbt.getCompound("anchor_data"));
@@ -64,6 +76,7 @@ public abstract class PlayerMixin extends LivingEntity implements PlayerShipAnch
 	@Inject(method = "initDataTracker", at = @At("TAIL"))
 	protected void initDataTracker(CallbackInfo ci) {
 		NbtCompound a = new NbtCompound();
+		a.putLong("shipId",-1);
 		dataTracker.startTracking(ANCHOR_DATA,a.copy());
 
 	}
